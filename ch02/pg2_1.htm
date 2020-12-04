@@ -1,0 +1,172 @@
+<html>
+<head>
+<title>Vera Visions Material Manual: General Material Keywords</title>
+<link rel = "stylesheet" type = "text/css" href = "../styles/design.css">
+</head>
+<body>
+<h1 class = "MsoTitle">Vera Visions Material Manual</h1>
+<hr>
+<h1>3 General Material Keywords</h1>
+<b>IMPORTANT NOTE:</b> Once again, be aware that some of the shader commands may be order dependent, so it's good practice to place all global shader commands (keywords defined inthis section) at the very beginning of the shader and to place shader stages at the end (see various examples).
+
+<p>These Keywords are global to a shader and affect all stages.
+
+<h2><a name = "diffusemap">3.1 diffusemap &lt;texturepath/texturename&gt;</a></h2>
+Specifies the default texture asset to use on the diffuse/albedo pass of the material. This is the base texture in most cases. Some special materials used for special effects and the like might not have one. However surfaces such as floors, walls etc. certainly do.
+It will affect which texture is used to get color information from for lighting passes, etc.
+
+<h2><a name = "normalmap">3.2 normalmap &lt;texturepath/texturename&gt;</a></h2>
+Specifies the default texture to use for any normalmap operations. This depends heavily on which GLSL program is used inside the later stages.
+The dynamic lights will use this to determine height information for light and shadows. So sometimes you want to skip setting this.
+
+<h2><a name = "specularmap">3.3 specularmap &lt;texturepath/texturename&gt;</a></h2>
+Can set the specularity of the surface in relation to dlights. Specularity is the intensity of the light reflecting off the surface. In special cases some GLSL programs might use the texture it for other purposes, too.
+
+<h2><a name = "skyparms">3.4 skyParms &lt;farbox&gt; &lt;cloudheight&gt; &lt;nearbox&gt;</a></h2>
+
+Specifies how to use the surface as a sky, including an optional far box (stars, moon, etc), optional cloud layers with any shader attributes, and an optional near box (mountains in front of the clouds, etc). <b>Some of the VMAP specific commands use this as a reference as to what skybox to use for color, intensity etc.</b>
+
+<p>The renderer will take it into account only if you do not supply any Stages in the material.
+
+<p><b>&lt;farbox&gt;</b> Specifies a set of files to use as an environment box behind all cloudlayers. Specify "-" for no
+farbox, or a file base name. A base name of "env/test" would look for files "env/test_rt.tga", "env/test_lf.tga",
+"env/test_ft.tga", "env/test_bk.tga", "env/test_up.tga", "env/test_dn.tga" to use as the right / left / front / back / up /
+down sides.
+
+<br><b>&lt;cloudheight&gt;</b> controls apparent curvature of the cloud layers - lower numbers mean more curvature (and thus more distortion at the horizons). Higher height values create "flatter" skies with less horizon distortion. Think of height
+as the radius of a sphere on which the clouds are mapped. Good ranges are 64 to 256. The default value is 128.
+
+<br><b>&lt;nearbox&gt;</b> Specified as farbox, to be alpha blended ontop of the clouds. This has not be tested in a long time, so it probably doesn't actually work. Set to "-" to ignore.
+
+<!--
+<p><div class = "tip"><strong>Design Notes:</strong>
+
+<ul><li>If you are making a map where the sky is seen by looking up most of the time, use a lower cloudheight value. Under those circumstances the tighter curve looks more dynamic. If you are making a map where the sky is seen by looking out windows most of the time or has a map area that is open to the sky on one or more sides, use a higher height to make the clouds seem more natural.
+
+<li>Be aware that the skybox does not wrap around the entire world. The "floor" or bottom face of the skybox is not drawn by the game. If a player in the game can see that face, they will see the "hall of mirrors" effect.</ul></div>
+-->
+
+<p align = "center"><strong>Example: Sky script</strong>
+
+<div><pre class = "type">
+// Vera Visions Material
+{
+	qer_editorImage textures/skies/dune.tga
+	skyParms textures/skies/dune/bg 256 -
+	noPicMip
+	noMipmaps
+
+	vmap_lightmapFilterRadius 0 8
+	vmap_sun 0.34 0.22 0.09 120 -28 127
+	vmap_skyLight 190 6
+	surfaceParm sky
+	surfaceParm noimpact
+	surfaceParm nolightmap
+	surfaceParm nodlight
+	{
+		program skybox
+		map $cube:textures/skies/dune/bg
+		map textures/skies/clouds/dunecloud.tga
+		map textures/skies/clouds/dunecloud_layer.tga
+	}
+}</pre>
+</div>
+
+<h2><a name = "cull">3.5 cull &lt;side&gt;</a></h2>
+Every surface of a polygon has two sides, a front and a back. Typically, we only see the front or "out" side. For
+example, a solid block you only show the front side. In many applications we see both. For example, in water, you can see both front and a back. The same is true for things like grates and screens.
+
+<p>To "cull" means to remove. The value parameter determines the type of face culling to apply. The default value is cull <i>front</i> if this keyword is not specified. However for items that should be inverted then the value <i>back</i> should be used. To disable culling, the value <i>disable</i> or <i>none</i> should be used. Only one cull instruction can be set
+for the shader.
+
+<p><div class = "subheading">3.5.1 cull front</div>
+
+The front or "outside" of the polygon is not drawn in the world. This is the default value. It is used if the keyword "<b>cull</b> " appears in the content instructions without a <b>&lt;side&gt;</b> value or if the keyword cull does not appear at all in the shader.
+
+<p><div class = "subheading">3.5.2 cull back</div>
+
+Cull back removes the back or "inside" of a polygon from being drawn in the world.
+
+<p><div class = "subheading">3.5.3 cull disable, cull none</div>
+Neither side of the polygon is removed. Both sides are drawn in the game. Very useful for making panels or barriers that
+have no depth, such as grates, screens, metal wire fences and so on and for liquid volumes that the player can see from within. Also used for energy fields, sprites, and weapon effects (e.g. plasma).
+
+<p><div class = "tip"><strong>Design Notes:</strong> For things like grates and screens, put the texture with the cull none property on one face only. On the other faces, use a non-drawing texture.</div>
+
+<h2><a name = "fogparms">3.6 fogparms &lt;red
+value&gt; &lt;green value&gt; &lt;bluevalue&gt; &lt;distance to
+Opaque&gt;</a></h2>
+
+<p>Note: you must also specify "surfaceparm fog" to cause q3map to identify the surfaces inside the volume. Fogparms only
+describes how to render the fog on the surfaces.
+
+<p><b>&lt;red value&gt; &lt;green value&gt; &lt;blue value&gt;</b> These are normalized values. A good computer art program should give you the RGB values for a color. To obtain the values that define fog color for Quake III Arena, divide the desired color's Red, Green and Blue values by 255 to obtain three normalized numbers within the 0.0 to 1.0 range.
+
+<br><b>&lt;distance toopaque&gt;</b> This is the distance, in game units, until the fog becomes totally opaque, as measured from the point of view of the observer. By making the height of the fog brush shorter than the distance to opaque, the apparent density of the fog can be reduced (because it never reaches the depth at which full opacity occurs).
+
+<ul><li>The fog volume can only have one surface visible (from outside the fog).
+<li>Fog must be made of one brush. It cannot be made of adjacent brushes.
+<li>Fog brushes must be axial. This means that only square or rectangular brushes may contain fog, and those must have their edges drawn along the axes of the map grid (all 90 degree angles).
+</ul>
+
+<p><div class = "tip"><strong>Design Notes:</strong>
+
+<ul><li>If a water texture contains a fog parameter, it must be treated as if it were a fog texture when in use.
+<li>If a room is to be filled completely with a fog volume,it can only be entered through one surface (and still have the fog function correctly).
+<li>Additional shader passes may be placed on a fog brush, as with other brushes.</ul></div>
+
+<h2><a name = "nopicmip">3.7 noPicMip</a></h2>
+This causes the texture to ignore user-set values for the <b>gl_picmip</b> cvar command. The image will always be high
+resolution. Example: Used to keep images and text in the heads up display from blurring when user optimizes the game graphics.
+
+<h2><a name = "nomipmaps">3.8 noMipmaps</a></h2>
+This implies <b>noPicMip</b>, but also prevents the generation of any lower resolution mipmaps for use by the 3d card. This will
+cause the texture to alias when it gets smaller, but there are some cases where you would rather have this than a blurry image. Sometimes thin slivers of triangles force things to very low mipmap levels, which leave a few constant pixels on otherwise scrolling special effects.
+
+<h2><a name = "polygon">3.9 polygonOffset &lt;value&gt;</a></h2>
+Surfaces rendered with the <b>polygonOffset</b> keyword are rendered slightly off the polygon's surface. This is typically
+used for wall markings and "decals." The distance between the offset and the polygon is variable. If no value is supplied a distance of 1 is assumed, however this is meant for backwards compatibility. Being explicit will help grepping values later in case you need to find all surfaces with just a polygonOffset of 1.
+
+<h2><a name = "portal">3.10 portal</a></h2>
+Specifies that this texture is the surface for a portal or mirror. In the game map, a portal entity must be placed directly in front of the texture (within 64 game units). All this does is set "sort portal", so it isn't needed if you specify
+that explicitly.
+
+<h2><a name = "sort">3.11 sort &lt;value&gt;</a></h2>
+Use this keyword to fine-tune the depth sorting of shaders as they are compared against other shaders in the game world. The
+basic concept is that if there is a question or a problem with shaders drawing in the wrong order against each other, this allows the designer to create a hierarchy ofwhich shader draws in what order.
+
+<p>The default behavior is to put all blended shaders in sort "additive" and all other shaders in sort "opaque", so you only
+need to specify this when you are trying to work around a sorting problem with multiple transparent surfaces in a scene.
+
+<p>The value here can be either a numerical value or (alternatively) one of the keywords in the following list (listed in order of mostly ascending priority):
+
+<ul><b>ripple:</b> Meant for surfaces blending below water surfaces I guess.
+
+<br><b>deferredlight:</b> Blend at the same order as deferred lighting. So before diffuse mapping usually takes place.
+
+<br><b>portal:</b> This surface is a portal, it draws over every other shader seen inside the portal, but before anything in the main view.
+
+<br><b>sky:</b> Typically, the sky is the farthest surface in the game world. Drawing this after other opaque surfaces can be an optimization on some cards. This currently has the wrong value for this purpose, so it doesn't do much of anything.
+
+<br><b>opaque:</b> This surface is opaque (rarely needed since this is the default with noblendfunc)
+
+<br><b>decal:</b> Blend it like a decal. Ones affected by light, or something.
+
+<br><b>seethrough:</b> Not sure what to call this, beyond repeating its name and it being between decal and unlitdecal.
+
+<br><b>unlitdecal:</b> Blend it like an unlit decal, this most commonly is bullet impacts.
+
+<br><b>banner:</b> Transparent, but very close to walls.
+
+<br><b>underwater:</b> Draw behind normal transparent surfaces.
+
+<br><b>blend:</b> Draw like a <b>blendFunc blend</b> transparent surface.
+
+<br><b>additive:</b> normal transparent surface (default for shaders with blendfuncs)
+
+<br><b>nearest:</b> this shader should always sort closest to the viewer, e.g. muzzle flashes and blend blobs</ul>
+
+<p align = "center"><a href = "../ch01/pg1_1.htm">Back</a> | <a href = "../index.html">Home</a> | <a href = "../ch03/pg3_1.htm">Next</a>
+
+</body>
+</html>

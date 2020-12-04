@@ -1,0 +1,277 @@
+<html>
+<head>
+<title>Vera Visions Material Manual: Specific Material Keywords</title>
+<link rel = "stylesheet" type = "text/css" href = "../styles/design.css">
+</head>
+<body>
+<h1 class = "MsoTitle">Vera Visions Material Manual</h1>
+<hr>
+<h1>4 VMAP Specific Material Keywords</h1>
+These keywords change the physical nature of the textures and the brushes that are marked with them. Changing any of these values will require the map to be re-compiled. These are global and affect the entire material.
+
+<h2><a name = "tessSize">4.1 vmap_tessSize &lt;amount&gt;</a></h2>
+The vmap_tessSize keyword controls
+the tessellation size (how finely a surface is chopped up in to triangles), in game units, of the surface. This is only
+applicable to solid brushes, not curves, and is generally only used on surfaces that are manipulated by a vertex shader <a href = "../ch05/pg5_1.htm#shader">program</a>. Abuse of this can create a huge number of triangles. This happens during VMAP processing, so maps must be reprocessed for changes to take effect.
+
+<p><div class = "tip"><b>Design Note:</b> It can also be used on tesselating surfaces to make sure that tesselations are large, and thus, less costly in terms of triangles created.</div>
+
+<h2><a name = "backshader">4.2 vmap_backshader &lt;materialname&gt;</a></h2>
+This allows a brush to use a different material when you are inside it looking out. By way of example, this would allow a water brush (or other) surfaces to have a different sort order (see <b><i>sort</i></b> above) or appearance when seen from the inside.
+
+<h2><a name = "globaltex">4.3 vmap_globaltexture</a></h2>
+Many problems with getting material effects to work across multiple adjacent brushes are a result of the way VMAP optimizes texture precision. This option resolves that, but at the expense of some precision of the textures when they are far away from the origin of the map.
+
+<h2><a name = "mapsun">4.4 vmap_sun &lt;red&gt; &lt;green&gt; &lt;blue&gt; &lt;intensity&gt; &lt;degrees&gt; &lt;elevation&gt; &lt;deviance&gt; &lt;samples&gt;</a></h2>
+This keyword in a sky material will create the illusion of light cast into a map by a single, infinitely distance light source (sun, moon, hellish fire, etc.). This is only processed during the lighting phase of VMAP.
+
+<p><b>&lt;red&gt;&lt;green&gt; &lt;blue&gt;</b> Color is described by three normalized rgbvalues. Color will be normalized to a 0.0 to 1.0 range, so it doesn't matter what range you use.
+
+<br><b>&lt;intensity&gt;</b> is the brightness of the generated light. A value of 100 is a fairly bright sun. The
+intensity of the light falls off with angle but not distance.
+
+<br><b>&lt;degrees&gt;</b> is the angle relative to the directions on the map file. A setting of 0 degrees equals east. 90
+isnorth, 180 is west and 270 is south.
+
+<br><b>&lt;elevation&gt;</b> is the distance, measured in degrees from the horizon (z value of zero in the map file). An
+elevation of 0 is sunrise/sunset. An elevation of 90 is noon.
+
+<br><b>&lt;deviance&gt;</b> is the number of degrees for the half-shadow. General values up to 2 or 3 are acceptable. The real sun has a solid angle of about half a degree.
+
+<br><b>&lt;samples&gt;</b> is the number of random jitters distributed over the solid arc (~16).
+
+<p><div class = "tip"><b>DESIGN NOTE:</b> Sky materials should probably still have a <b>vmap_surfacelight</b> value. The "sun" gives a strong directional light, but doesn't necessarily give the fill light needed to soften and illuminate shadows. Skies with clouds should probably have a weaker <b>vmap_sun</b> value and a higher <b>vmap_surfacelight</b> value. Heavy clouds diffuse light and weaken shadows. The opposite is true of a cloudless or nearly cloudless sky. Insuch cases, the "sun" or "moon" will cast stronger, shadows that have a greater degree of contrast.
+
+<p><b>Design Trick:</b> Not certain what color formula you want to use for the sun's light? Try this. Create a light entity. Use the level editor's color selection tools to pick a color. The light's _color key's value will be the normalized RGB formula. Copy it from the value line in the editor (CTRL+c) and paste it into your material.</div>
+
+<h2><a name = "surflight">4.5 vmap_surfaceLight &lt;light value&gt;</a></h2>
+
+The texture gives off light equal to the <b>&lt;light value&gt;</b> set for it. The relative surface area of the texture in the world affects the actual amount of light that appears to be radiated. To give off what appears to be the same amount
+of light, a smaller texture must be significantly brighter than a larger texture. Unless the qer_lightimage keyword is used to select a different source for the texture's light color information, the color of the light will be the averaged color of the texture.
+
+<h2><a name = "lightimg">4.6 vmap_lightimage &lt;texturepath/texturename&gt;</a></h2>
+The keyword <b>vmap_lightimage</b> generates lighting from the average color of the TGA image specified by the
+vmap_lightimage.
+
+<p>The keyword sequence for generating light on a <b>vmap_surfacelight</b> should be ordered as follows:
+
+<ol><li><b>vmap_lightimage</b> ; (the texture providing the light and the color of the light)
+<li><b>qer_editorimage</b> ; (the editor-only image used to select the source map for the texture)
+<li>the average color of the light emitted from the material is calculated from the <b>lightimage.</b>)</ol>
+
+<p>The reason <b>vmap_lightimage</b> is specified for the light in the example below, is because the blend map is predominantly yellow, and the designer wanted more yellow light to be emitted from the light.
+
+<p align = "center"><strong>Example: Taking light from another source texture</strong>
+
+<p><pre class = "type">
+// Vera Visions Material
+{
+	// base TGA (used because the material is used with several
+	// different light values
+	diffusemap textures/gothic_light/ironcrosslt2.tga
+
+	// this TGA is the source for the color of the blended light
+	vmap_lightimage textures/gothic_light/ironcrosslt2.blend.tga
+
+	// emitted light value of 10,000
+	vmap_surfacelight 10000
+
+	{
+		program lightmapped
+		map $diffusemap
+	}
+	{
+		program unlit
+		map textures/gothic_light/ironcrosslt2.tga
+		blendFunc filter
+	}
+	{
+		program unlit
+		map textures/gothic_light/ironcrosslt2.blend.tga
+		blendFunc add
+	}
+}
+</pre>
+
+<h2><a name = "lightsub">4.7 vmap_lightsubdivide &lt;value&gt;</a></h2>
+This allows the user to define how large, or small to make the subdivisions (triangles) in a textured surface, particularly aimed at light-emitting textures like skies. It defaults to 120 game units, but can be made larger (256 or 512) for sky boxes or smaller for light surfaces at the bottoms of cracks. This can be a dominant factor in processing time for VMAP lighting.
+
+<h2><a name = "surfparm">4.8 surfaceparm &lt;parm&gt;</a></h2>
+
+<p>The surfaceparm keyword is not only read by the VMAP compiler, but also by the renderer. A few keywords will only apply to any one of them.
+
+<p>All surfaceparm keywords are preceded by the word surfaceparm as follows: <b>surfaceparm fog</b> or <b>surfaceparm noimpact</b>.
+
+<p><div class = "subheading">4.8.1  alphashadow</div>
+This keyword applied to a texture on a brush, patch or model will cause the lighting phase of the VMAP process to use the texture's alpha channel as a mask for casting static shadows in the game world.
+
+<p><div class = "tip"><b>Design Note:</b> Alphashadow does not work well with fine line detail on a texture. Fine lines may not cast acceptable shadows. It appears to work best with well-defined silhouettes and wider lines within the texture. Most of our tattered banners use this to cast tattered shadows.</div>
+
+<p><div class = "subheading">4.8.2 areaportal</div>
+A brush marked with this keyword functions as an area portal, a break in the VMAP tree. It is typically placed on a very thin brush placed inside a door entity (but is not a part of that entity). The intent is to block the game from processing
+surface triangles located behind it when the door is closed. It is also used by the BSPC (bot area file creation compiler) in the same manner as a clusterportal. The brush must touch all the structural brushes surrounding the <b>
+areaportal</b>.
+
+<p><div class = "subheading">4.8.3 clusterportal</div>
+A brush marked with this keyword function creates a subdivision of the area file (.aas) used by the bots for navigation. It
+is typically placed in locations that are natural breaks in a map, such a sentrances to halls, doors, tunnels, etc. The intent is keep the bot from having to process the entire map at once. As with the the areaportal parameter, the affected brush must touch all the structural brushes surrounding the <b>areaportal</b>.
+
+<p><div class = "subheading">4.8.4 donotenter</div>
+Read as "do not enter." Like clusterportal, this is a bot-only property. A brush marked with donotenter will not affect
+non-bot players, but bots will not enter it. It should be used only when bots appear to have difficulty navigating around some map features.
+
+<p><div class = "subheading">4.8.5 fog</div>
+Fog defines the brush as being a "fog" brush. This is a VMAP function that chops and identifies all geometry inside the
+brush. The General material keyword fogparms must also be specified to tell how to draw the fog.
+
+<p><div class = "subheading">4.8.6 lava</div>
+Assigns to the texture the game properties set for lava. This affects both the surface and the content of a brush.
+
+<p><div class = "subheading">4.8.7 lightfilter</div>
+Causes the VMAP light stage to use the texture's RGB and alpha channels to generate colored alpha shadows in the lightmap. For example, this can be used to create the colored light effect cast by stained glass windows. This can be used with surfaceparm alphashadow if an alpha is to be respected.
+
+<p><div class = "subheading">4.8.8 nodamage</div>
+The player takes no damage if he falls onto a texture with this surfaceparm
+
+<p><div class = "subheading">4.8.9 nodlight</div>
+Read as "No <i>Dee</i>Light". A texture containing this parameter will not be affected or lit by dynamic lights, such as
+weapon effects. The VMAP compiler doesn't really care about this, but the renderer does.
+
+<p><div class = "subheading">4.8.10 nodraw</div>
+A texture marked with nodraw will not visually appear in the game world. Most often used for triggers, clip brushes, origin
+brushes, and so on. Light will pass through it, therefore beware of bleeding issues when using nodraw/caulk textures with this.
+
+<p><div class = "subheading">4.8.11 nodraw2</div>
+Same as <b>nodraw</b>, but the engine won't draw it, whereas the VMAP compiler will react to the surface. So unlike <i>nodraw</i>, light will not pass through these surfaces.
+
+<p><div class = "subheading">4.8.12 noimpact</div>
+World entities will not impact on this texture. No explosions occur when projectiles strike this surface and no marks
+will be left on it. Sky textures are usually marked with this texture so those projectiles will not hit the sky and leave
+marks.
+
+<p><div class = "subheading">4.8.13 nomarks</div>
+Projectiles will explode upon contact with this surface, but will not leave marks. Blood will also not mark this surface.
+This is useful to keep lights from being temporarily obscured by battle damage.
+
+<p><div class = "subheading">4.8.14 nolightmap</div>
+This texture does not have a lightmap phase. It is not affected by the ambient lighting of the world around it. It does not
+require the addition of an rgbGen identity keyword in that stage.
+
+<p><div class = "subheading">4.8.15 nosteps</div>
+The player makes no sound when walking on this texture.
+
+<p><div class = "subheading">4.8.16 nonsolid</div>
+This attribute indicates a brush, which does not block the movement of entities in the game world. It applied to
+triggers, hint brushes and similar brushes. This affects the content of a brush.
+
+<p><div class = "subheading">4.8.17 origin</div>
+Used on the "origin" texture. Rotating entities need to contain an origin brush in their construction. The brush must be
+rectangular (or square). The origin point is the exact center of the origin brush.
+
+<p><div class = "subheading">4.8.18 playerclip</div>
+Blocks player movement through a <b>nonsolid</b> texture. Other game world entities can pass through a brush marked <b>
+playerclip</b>. The intended use for this is to block the player but not block projectiles like rockets.
+
+<p><div class = "subheading">4.8.19 slick</div>
+This surfaceparm included in a texture should give it significantly reduced friction.
+
+<p><div class = "subheading">4.8.20 slime</div>
+Assigns to the texture the game properties for slime. This affects both the surface and the content of a brush.
+
+<p><div class = "subheading">4.8.21 structural</div>
+This surface attribute causes a brush to be seen by the VMAP process as a possible break-point in a BSP tree. It is used
+as a part of the material for the "hint" texture. Generally speaking, any opaque texture not marked as "<b>detail</b>" is, by
+default, <b>structural,</b> so you shouldn't need to specify this.
+
+<p><div class = "subheading">4.8.22 trans</div>
+Light will pass through this surface, but only if neither alphashadow or lightfilter are applied.
+Tells VMAP that pre-computed visibility should not be blocked by this surface. Generally, any materials that have blendfuncs
+should be marked as surfaceparm trans.
+
+<p><div class = "subheading">4.8.23 water</div>
+Assigns to the texture the game properties for water.
+
+<p><div class = "subheading">4.8.24 climb</div>
+Marks the desired surface as a climbable surface. This currently affects the entire volume.
+
+<p><div class = "subheading">4.8.25 vehicleclip</div>
+Blocks all movement of vehicle entities through this surface.
+
+<p><div class = "subheading">4.8.26 leakssteam</div>
+When this surface is impacted, steam will leak out temporarily. Specific to The Wastes 1.3.
+
+<p><div class = "subheading">4.8.27 leakswater</div>
+When this surface is impacted, water will leak out temporarily. Specific to The Wastes 1.3.
+
+<p><div class = "subheading">4.8.28 alien</div>
+Defines that the surface is of an 'alien' material. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.29 flesh</div>
+Defines that the surface is of flesh. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.30 foliage</div>
+Defines that the surface is foliage. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.31 computer</div>
+Defines that the surface is of computer parts. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.32 dirt</div>
+Defines that the surface is of dirt. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.33 vent</div>
+Defines that the surface is a vent. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.34 grate</div>
+Defines that the surface is a grate. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.35 metal</div>
+Defines that the surface is of metal. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.36 glass</div>
+Defines that the surface is of glass. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.37 sand</div>
+Defines that the surface is of sand. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.38 slosh</div>
+Defines that the surface is of a liquid. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.39 snow</div>
+Defines that the surface is of snow. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.40 tile</div>
+Defines that the surface is of kitchen/bathroom tiles. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.41 wood</div>
+Defines that the surface is of wood. Affects impact sound and effects.
+
+<p><div class = "subheading">4.8.42 concrete</div>
+Defines that the surface is of concrete. Affects impact sound and effects.
+
+
+<p><div class = "subheading">4.8.43 fl_r1</div>
+Reserved for custom games. This can be anything.
+
+<p><div class = "subheading">4.8.44 fl_r2</div>
+Reserved for custom games. This can be anything.
+
+<p><div class = "subheading">4.8.45 fl_r3</div>
+Reserved for custom games. This can be anything.
+
+<p><div class = "subheading">4.8.46 fl_r4</div>
+Reserved for custom games. This can be anything.
+
+<p><div class = "subheading">4.8.47 fl_r5</div>
+Reserved for custom games. This can be anything.
+
+<p><div class = "subheading">4.8.48 fl_r6</div>
+Reserved for custom games. This can be anything.
+
+<p><div class = "subheading">4.8.49 fl_r7</div>
+Reserved for custom games. This can be anything.
+
+
+<p align = "center"><a href = "../ch02/pg2_1.htm">Back</a> | <a href = "../index.html">Home</a> | <a href = "../ch04/pg4_1.htm">Next</a>
+
+</body>
+</html>

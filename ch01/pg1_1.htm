@@ -1,0 +1,116 @@
+<html>
+<head>
+<title>Vera Visions Material Manual: Introduction</title>
+<link rel = "stylesheet" type = "text/css" href = "../styles/design.css">
+</head>
+<body>
+<h1 class = "MsoTitle">Vera Visions Material Manual</h1>
+<hr>
+<h1>1 Preface: Making Your Own Materials</h1>
+
+The Manual for the level editor program contains a section called <b><i>Creating New Assets</i></b> that has the necessary information for setting up the files to create your own custom materials. It is recommended that you study the scripts in this document and in the individual material scripts. Pay careful attention to syntax and punctuation. This is where you are most likely to make mistakes.
+
+<p>The material language is heavily specific to OpenGL and Vulkan graphics rendering API behaviour. You have direct access to OpenGL blend mode calls for example and are linking each material to a more advanced GLSL <a href = "../ch05/pg5_1.htm#shader">program</a> to handle the actual rendering of any given surface. To write materials you do not need to know GLSL, however you should have a basic understanding of what parameters to pass (if any exist for any given GLSL) and which <b>map</b> commands need to be passed in order for a material to render as intended. Please look at the examples in the game for inspiration and a point of reference.
+
+<h1><a name = "intro">2 Introduction</a></h1>
+
+The graphic engine for <i>Quake III Arena</i> has taken a step forward by putting much more direct control over the surface
+qualities of textures into the hands of designers and artists. That's why its engine technology was chosen as a basis
+for <i>The Wastes</i> and future games by <b>Vera Visions</b>.
+<br>
+In writing this manual, we have tried to define the concepts and tools that are used to modify textures in a way that, it is hoped, will be graspable by users who already have basic knowledge ofcomputer graphics but are not necessarily computer programmers. It is not a tutorial, nor was it intended to be one.
+
+<h2><a name = "what">2.1 What is a Material?</a></h2>
+
+Materials are short text scripts that define the properties of a surface as it appears and functions in a game world (or compatible editing tool). By convention, the documents that contain these scripts usually has the same name as the texture set which contains the textures being modified (e.g; base, hell, castle, etc,). Several specific script documents have also been created to handle special cases, like liquids, sky and special effects.
+
+<p>Material scripts are located in the textures/ directory, along with their assets, with the ".mat" file extension.
+
+<p>A material file consists of a series of surface attributes (global scope) and rendering instructions formatted
+within braces ("{" and "}"). Below you can see a simple example of syntax and format for a single process, including the
+VMAP keywords or "Surface Parameters", which follow the first bracket and a single bracketed "stage":
+
+<p><pre class = "type">
+// Vera Visions Material
+{
+	diffusemap textures/common/lava.tga
+	vmap_tessSize 64
+	{
+		program unlit
+		map $diffusemap
+		blendFunc add
+	}
+}
+</pre>
+
+<h2><a name = "conventions">2.2 Material Name &amp; File Conventions</a></h2>
+The first line is a simple comment. All the official textures are marked that way.
+The file-name of the material, as well as the full path are often a mirror of a pathname to a standard .tga file without the extension or base dir (/TW/wastes in our case), but they do not need to be.
+
+<p>Materials that are placed on surfaces in the map editor commonly mirror a .tga file, but the "qer_editorimage" parameter canforce the editor to use an arbitrary image for display.
+
+<p>Material pathnames have a case sensitivity issue - on Microsoft Windows, they <i>aren't</i> case sensitive, but on UNIX they <i>are</i>. Try to always use lowercase for filenames, and always use forward slashes "/" for directory separators.
+
+<h2><a name = "types">2.3 Material Types</a></h2>
+The keywords that affect materials are divided into two classes. The first class of keywords are global parameters. Some global parameters (<b>"surfaceparms."</b> And all <b>"vmap_" keywords</b>) are processed by VMAP, and change physical attributes of the surface that uses the material. These attributes can affect the player. To see changes in these parameters one must recompile the level.
+
+<p>The remaining global keywords, and all Stage Specific Keywords are processed by the renderer. They are appearance changes
+only and have no effect on game play or game mechanics. Changes to any of these attributes will take effect as soon as the game goes to another level or vid_reload (type command <b>vid_reload</b> in the game console).
+
+<p>The <b>"program" keyword</b> inside of a stage tells the renderer which GLSL <a href = "../ch05/pg5_1.htm#shader">program</a> to run on the material. GLSL programs control the entire rendering routine for any given surface. There's a few available to you. In the above example it would cause the texture to be rendered without lighting and just the diffuse texture.
+
+<p>The <b>"blendFunc" keyword</b> is another Stage Specific Keyword that affects how the material is drawn on top of everything else. It will never be placed as a global paremeter, as it will never affect gameplay.
+
+<p>Material keywords are <i>not</i> case sensitive.
+
+<p><b>IMPORTANT NOTE:</b> some of the material commands may be order dependent, so it's good practice to place all global material commands (keywords defined in this section) at the very beginning of the material and to place stages at the end (see various examples).
+
+<h2><a name = "concepts">2.4 Key Concepts</a></h2>
+
+Ideally, a designer or artist who is manipulating textures with material files has a basic understanding of wave forms and knows about mixing colored light (high school physics sort of stuff). If not, there are some concepts you need to have a
+grasp on to make materials work for you.
+
+<p><div class = "subheading">2.4.1 Surface Effects vs. Content Effects</div>
+Materials not only modify the visible aspect of textures on a geometry brush, curve, patch or mesh model, but they can also have an effect on both the content, "shape," and apparent movement of those things. A surface effect does nothing to modify
+the shape or content of the brush. Surface effects include glows, transparencies and rgb (red, green, blue) value
+changes. Content materials affect the way the brush operates in the game world. Examples include water, fog, nonsolid, and
+structural. A GLSL <a href = "../ch05/pg5_1.htm#shader">program</a> can also affect the movement of a surface. Water can be tesselated and create waves, for example. This is all done
+within a GLSL <a href = "../ch05/pg5_1.htm#shader">program</a> with an appropriate vertex shader.
+
+<p><div class = "subheading">2.4.2 Power Has a Price</div>
+The material script gives the designer, artist and programmer a great deal of easily accessible power over the appearance of
+and potential special effects that may be applied to surfaces in the gameworld. But it is power that comes with a price tag
+attached, and the cost is measured in performance speed. Each material phase that affects the appearance of a texture causes the <i>Q3:A</i>engine to make another processing pass and redraw the world. Think of it as if you were adding all
+the material-affected triangles to the total r_speed count for each stage in the material script. A material-manipulated texture that is seen through another material-manipulated texture (e.g. a light in fog) has the effect of <i>adding</i> the total number of passes together for the affected triangles. A light that required two passes seen through a fog that requires one pass will be treated as having to redraw that part of the world three times.
+
+<p><div class = "subheading">2.4.3 RGB Color</div>
+
+RGB means "Red, Green, Blue."Mixing red, green and blue light in differing intensities creates the colors in computers and television monitors. This is called <i>additive color</i> (as opposed to the mixing of pigments in paint or colored ink in the printing process, which is subtractive color). Here and in most higher-end computer art programs (and the color selector in Windows), the intensities ofthe individual Red, Green and Blue components are expressed as number values. When mixed together on a screen, number values of equal intensity in each component color create a completely neutral (gray) color. The lower the number value (towards 0), the darker the shade. The higher the value, the lighter the shade or the more saturated the color until it reaches a maximum value of 255 (in the art programs). All colors possible on the computer can be expressed as a formula of three numbers. The value for complete black is 0 0 0. The value for complete white is 255 255 255. However, the graphics engine requires that the color range be "normalized" into a range between 0.0 and 1.0.
+
+<p><div class = "subheading">2.4.4 Normalization: a Scale of 0 to 1</div>
+The mathematics here use a scale of 0.0 to 1.0 instead of 0 to 255. Most computer art programs that can express RGB values as numbers use the 0 to 255 scale. To convert numbers, divide each of the artprogram's values for the component colors by 255. The resulting three values are your formula for that color component. The same holds true for texture coordinates.
+
+<p><div class = "subheading">2.4.5 Texture Sizes</div>
+TGA texture files are measured in pixels (picture elements). Textures are measured in powers of 2, with 16 x16 pixels being the smallest (typically) texture in use. Most will be larger. Textures need not be square, so long as both dimensions are powers of 2. Examples include: 32x256, 16x32, 128x16.
+
+<p><div class = "subheading">2.4.6 Color Math</div>
+
+Colors are changed by mathematical equations worked on the textures by way ofthe scripts or
+"programlets" in the material file. An equation that adds to or multiplies the number values in atexture causes it to become
+darker. Equations that subtract from or modulate number values in a texture cause it to become lighter. Either equation can change the hue and saturation of a color.
+
+<p><div class = "subheading">2.4.7 Measurements</div>
+
+The measurements used in the materials are in either game units, color units, or texture units.
+
+<p>&middot; <b>Game unit:</b> A game unit is used by deformations to specify sizes relative to the world. Game units are the same scale we have had since way back in the <i>Wolfenstein</i>days - 8 units equals one foot. The default texture scale used by the WorldSpawn map editor results in two texels for each game unit, but that can be freely changed.
+
+<p>&middot; <b>Color units</b>: Colors scale the values generated by the texture units to produce lighting effects. A value of 0.0 will be completely black, and a value of 1.0 will leave the texture unchanged. Colors are sometimes specified with a single value to be used across all red, green,and blue channels, or sometimes as separate values for each channel.
+
+<p>&middot; <b>Texture units:</b> This is the normalized (see above) dimensions of the original texture image (or a previously modified texture at a given stage in the material pipeline). A full texture, regardless of its original size in texels, has a normalized measurement of 1.0 x 1.0. For normal repeating textures, it is possible to have value greater than 1.0 or less than 0.0, resulting in repeating of the texture. The coordinates are usually assigned by the level editor or
+modeling tools, but you still need to be aware of this for scrolling or turbulent movement of the texture at runtime.
+
+<p align = "center">Back | <a href = "../index.html">Home</a> | <a href = "../ch02/pg2_1.htm">Next</a>
+
+</body>
+</html>
